@@ -1,0 +1,2407 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "MAI — Instituto Mirabilis API",
+    "description": "API REST do CMS do Instituto Mirabilis. Gestão de autenticação, áreas de formação, programas, soluções corporativas e hero slides.",
+    "contact": {
+      "email": "geral@mai.ao"
+    },
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3333/api/v1",
+      "description": "Desenvolvimento"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Auth",
+      "description": "Autenticação e gestão de sessão"
+    },
+    {
+      "name": "Areas",
+      "description": "Áreas de formação do MAI"
+    },
+    {
+      "name": "Programs",
+      "description": "Programas de formação (standalone)"
+    },
+    {
+      "name": "Solutions",
+      "description": "Soluções corporativas"
+    },
+    {
+      "name": "Slides",
+      "description": "Hero slides da página inicial"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT obtido em POST /auth/login"
+      }
+    },
+    "schemas": {
+      "ApiSuccess": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {}
+        }
+      },
+      "ApiError": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "message": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "ToggleResult": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ReorderBody": {
+        "type": "object",
+        "required": ["ids"],
+        "properties": {
+          "ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": ["cuid1", "cuid2", "cuid3"]
+          }
+        }
+      },
+      "LoginBody": {
+        "type": "object",
+        "required": ["email", "password"],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "admin@mai.ao"
+          },
+          "password": {
+            "type": "string",
+            "example": "Admin@MAI2025!"
+          }
+        }
+      },
+      "AuthTokens": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "refreshToken": {
+            "type": "string"
+          },
+          "expiresIn": {
+            "type": "integer",
+            "description": "Segundos até expiração",
+            "example": 28800
+          }
+        }
+      },
+      "AuthUser": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": ["SUPERADMIN", "EDITOR"]
+          },
+          "lastLogin": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "LoginResponse": {
+        "type": "object",
+        "properties": {
+          "tokens": {
+            "$ref": "#/components/schemas/AuthTokens"
+          },
+          "user": {
+            "$ref": "#/components/schemas/AuthUser"
+          }
+        }
+      },
+      "RefreshBody": {
+        "type": "object",
+        "required": ["refreshToken"],
+        "properties": {
+          "refreshToken": {
+            "type": "string"
+          }
+        }
+      },
+      "ForgotPasswordBody": {
+        "type": "object",
+        "required": ["email"],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "admin@mai.ao"
+          }
+        }
+      },
+      "VerifyOtpBody": {
+        "type": "object",
+        "required": ["email", "otp"],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "otp": {
+            "type": "string",
+            "minLength": 6,
+            "maxLength": 6,
+            "example": "123456"
+          }
+        }
+      },
+      "ResetPasswordBody": {
+        "type": "object",
+        "required": ["email", "otp", "newPassword"],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "otp": {
+            "type": "string",
+            "minLength": 6,
+            "maxLength": 6
+          },
+          "newPassword": {
+            "type": "string",
+            "minLength": 8,
+            "example": "NovaPassword@123"
+          }
+        }
+      },
+      "Program": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "areaId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "duration": {
+            "type": "string",
+            "example": "40h"
+          },
+          "mode": {
+            "type": "string",
+            "example": "Presencial"
+          },
+          "price": {
+            "type": "string",
+            "example": "150.000 Kz"
+          },
+          "startDate": {
+            "type": "string",
+            "example": "Jul 2025"
+          },
+          "description": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Area": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string",
+            "example": "bank-outline"
+          },
+          "title": {
+            "type": "string",
+            "example": "Banca & Finanças"
+          },
+          "description": {
+            "type": "string"
+          },
+          "order": {
+            "type": "integer"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "programs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Program"
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CreateAreaBody": {
+        "type": "object",
+        "required": ["icon", "title", "description"],
+        "properties": {
+          "icon": {
+            "type": "string",
+            "example": "bank-outline"
+          },
+          "title": {
+            "type": "string",
+            "example": "Banca & Finanças"
+          },
+          "description": {
+            "type": "string",
+            "example": "Capacitação para instituições financeiras."
+          },
+          "order": {
+            "type": "integer",
+            "example": 1
+          },
+          "active": {
+            "type": "boolean",
+            "default": true
+          }
+        }
+      },
+      "UpdateAreaBody": {
+        "type": "object",
+        "properties": {
+          "icon": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "order": {
+            "type": "integer"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CreateProgramBody": {
+        "type": "object",
+        "required": [
+          "name",
+          "duration",
+          "mode",
+          "price",
+          "startDate",
+          "description"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Supervisão Bancária"
+          },
+          "duration": {
+            "type": "string",
+            "example": "40h"
+          },
+          "mode": {
+            "type": "string",
+            "example": "Presencial",
+            "enum": [
+              "Presencial",
+              "Online Live",
+              "Presencial / Online",
+              "Presencial / Prático",
+              "Híbrido"
+            ]
+          },
+          "price": {
+            "type": "string",
+            "example": "150.000 Kz"
+          },
+          "startDate": {
+            "type": "string",
+            "example": "Jul 2025"
+          },
+          "description": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean",
+            "default": true
+          }
+        }
+      },
+      "ProgramWithArea": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Program"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "area": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "icon": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "CreateProgramStandaloneBody": {
+        "type": "object",
+        "required": [
+          "areaId",
+          "name",
+          "duration",
+          "mode",
+          "price",
+          "startDate",
+          "description"
+        ],
+        "properties": {
+          "areaId": {
+            "type": "string",
+            "description": "ID da área à qual pertence o programa"
+          },
+          "name": {
+            "type": "string",
+            "example": "Supervisão Bancária"
+          },
+          "duration": {
+            "type": "string",
+            "example": "40h"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "Presencial",
+              "Online Live",
+              "Presencial / Online",
+              "Presencial / Prático",
+              "Híbrido"
+            ]
+          },
+          "price": {
+            "type": "string",
+            "example": "150.000 Kz"
+          },
+          "startDate": {
+            "type": "string",
+            "example": "Jul 2025"
+          },
+          "description": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean",
+            "default": true
+          }
+        }
+      },
+      "UpdateProgramStandaloneBody": {
+        "type": "object",
+        "properties": {
+          "areaId": {
+            "type": "string",
+            "description": "Move o programa para outra área"
+          },
+          "name": {
+            "type": "string"
+          },
+          "duration": {
+            "type": "string"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "Presencial",
+              "Online Live",
+              "Presencial / Online",
+              "Presencial / Prático",
+              "Híbrido"
+            ]
+          },
+          "price": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "BulkToggleBody": {
+        "type": "object",
+        "required": ["areaId", "active"],
+        "properties": {
+          "areaId": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Solution": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string",
+            "example": "mdi-office-building-outline"
+          },
+          "title": {
+            "type": "string",
+            "example": "Formação In Company"
+          },
+          "description": {
+            "type": "string"
+          },
+          "order": {
+            "type": "integer"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "wide": {
+            "type": "boolean",
+            "description": "Ocupa largura total na grelha"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CreateSolutionBody": {
+        "type": "object",
+        "required": ["icon", "title", "description"],
+        "properties": {
+          "icon": {
+            "type": "string",
+            "example": "mdi-office-building-outline"
+          },
+          "title": {
+            "type": "string",
+            "example": "Formação In Company"
+          },
+          "description": {
+            "type": "string"
+          },
+          "order": {
+            "type": "integer",
+            "example": 1
+          },
+          "active": {
+            "type": "boolean",
+            "default": true
+          },
+          "wide": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      },
+      "UpdateSolutionBody": {
+        "type": "object",
+        "properties": {
+          "icon": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "order": {
+            "type": "integer"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "wide": {
+            "type": "boolean"
+          }
+        }
+      },
+      "WideToggleResult": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "wide": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Slide": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "badge": {
+            "type": "string",
+            "example": "Formação de Excelência"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "ctaPrimaryLabel": {
+            "type": "string",
+            "example": "Explorar Programas"
+          },
+          "ctaPrimaryHref": {
+            "type": "string",
+            "example": "#areas"
+          },
+          "ctaSecondaryLabel": {
+            "type": "string",
+            "example": "Saber Mais"
+          },
+          "ctaSecondaryHref": {
+            "type": "string",
+            "example": "#sobre"
+          },
+          "imageUrl": {
+            "type": "string",
+            "example": "http://localhost:4000/uploads/slide.jpg"
+          },
+          "order": {
+            "type": "integer"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CreateSlideFormData": {
+        "type": "object",
+        "required": ["badge", "title", "description", "image"],
+        "properties": {
+          "image": {
+            "type": "string",
+            "format": "binary",
+            "description": "Ficheiro de imagem (JPEG, PNG, WEBP, GIF — máx. 5MB)"
+          },
+          "badge": {
+            "type": "string",
+            "example": "Formação de Excelência em Angola"
+          },
+          "title": {
+            "type": "string",
+            "example": "Transformamos <em>Competências</em> em Resultados"
+          },
+          "description": {
+            "type": "string"
+          },
+          "ctaPrimaryLabel": {
+            "type": "string",
+            "example": "Explorar Programas"
+          },
+          "ctaPrimaryHref": {
+            "type": "string",
+            "example": "#areas"
+          },
+          "ctaSecondaryLabel": {
+            "type": "string",
+            "example": "Saber Mais"
+          },
+          "ctaSecondaryHref": {
+            "type": "string",
+            "example": "#sobre"
+          },
+          "order": {
+            "type": "integer"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "UpdateSlideBody": {
+        "type": "object",
+        "properties": {
+          "badge": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "ctaPrimaryLabel": {
+            "type": "string"
+          },
+          "ctaPrimaryHref": {
+            "type": "string"
+          },
+          "ctaSecondaryLabel": {
+            "type": "string"
+          },
+          "ctaSecondaryHref": {
+            "type": "string"
+          },
+          "order": {
+            "type": "integer"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "UpdateSlideImageFormData": {
+        "type": "object",
+        "required": ["image"],
+        "properties": {
+          "image": {
+            "type": "string",
+            "format": "binary",
+            "description": "Nova imagem (JPEG, PNG, WEBP, GIF — máx. 5MB)"
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Login",
+        "description": "Autentica o utilizador e devolve access token + refresh token.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login efectuado com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccess"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/LoginResponse"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credenciais inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Renovar access token",
+        "description": "Devolve um novo access token a partir do refresh token.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tokens renovados",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccess"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AuthTokens"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Refresh token inválido ou expirado"
+          }
+        }
+      }
+    },
+    "/auth/forgot-password": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Recuperar password — enviar OTP",
+        "description": "Envia um código OTP de 6 dígitos para o email fornecido. Responde sempre 204 independentemente de o email existir.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotPasswordBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "OTP enviado (ou email não encontrado — resposta igual por segurança)"
+          }
+        }
+      }
+    },
+    "/auth/verify-otp": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Verificar OTP",
+        "description": "Valida o código OTP sem redefinir a password. Usado para o step intermédio do frontend.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyOtpBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Código OTP válido"
+          },
+          "400": {
+            "description": "Código OTP inválido ou expirado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/reset-password": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Redefinir password",
+        "description": "Redefine a password usando o OTP válido recebido por email.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password redefinida com sucesso"
+          },
+          "400": {
+            "description": "OTP inválido, expirado ou password fraca"
+          }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "Dados do utilizador autenticado",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dados do utilizador",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccess"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AuthUser"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token inválido ou não fornecido"
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Logout",
+        "description": "Stateless — 204 sem corpo. O cliente deve descartar o token.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Sessão encerrada"
+          }
+        }
+      }
+    },
+    "/areas": {
+      "get": {
+        "tags": ["Areas"],
+        "summary": "Listar áreas",
+        "description": "Devolve todas as áreas com os seus programas. Endpoint público.",
+        "parameters": [
+          {
+            "name": "active",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
+            },
+            "description": "Filtrar por estado activo/inactivo"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Pesquisa por título ou descrição"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de áreas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccess"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Area"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Areas"],
+        "summary": "Criar área",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAreaBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Área criada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccess"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/Area"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autorizado"
+          }
+        }
+      }
+    },
+    "/areas/reorder": {
+      "patch": {
+        "tags": ["Areas"],
+        "summary": "Reordenar áreas",
+        "description": "Recebe array de IDs na ordem desejada e actualiza o campo `order` de cada área.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Áreas reordenadas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiSuccess"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/areas/{id}": {
+      "get": {
+        "tags": ["Areas"],
+        "summary": "Detalhe de área",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Área encontrada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccess"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/Area"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Área não encontrada"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Areas"],
+        "summary": "Actualizar área",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAreaBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Área actualizada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccess"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/Area"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Área não encontrada"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Areas"],
+        "summary": "Eliminar área",
+        "description": "Elimina a área e todos os seus programas (cascade).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Área eliminada"
+          },
+          "404": {
+            "description": "Área não encontrada"
+          }
+        }
+      }
+    },
+    "/areas/{id}/toggle": {
+      "patch": {
+        "tags": ["Areas"],
+        "summary": "Activar / Desactivar área",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Estado alterado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccess"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/ToggleResult"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/areas/{areaId}/programs": {
+      "get": {
+        "tags": ["Areas"],
+        "summary": "Listar programas de uma área",
+        "parameters": [
+          {
+            "name": "areaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "active",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "mode",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de programas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccess"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Program"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Areas"],
+        "summary": "Criar programa numa área",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "areaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProgramBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Programa criado"
+          },
+          "404": {
+            "description": "Área não encontrada"
+          }
+        }
+      }
+    },
+    "/areas/{areaId}/programs/{programId}": {
+      "get": {
+        "tags": ["Areas"],
+        "summary": "Detalhe de um programa",
+        "parameters": [
+          {
+            "name": "areaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "programId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Programa encontrado"
+          },
+          "404": {
+            "description": "Não encontrado"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Areas"],
+        "summary": "Actualizar programa",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "areaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "programId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProgramBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Programa actualizado"
+          },
+          "404": {
+            "description": "Não encontrado"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Areas"],
+        "summary": "Eliminar programa",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "areaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "programId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Eliminado"
+          },
+          "404": {
+            "description": "Não encontrado"
+          }
+        }
+      }
+    },
+    "/areas/{areaId}/programs/{programId}/toggle": {
+      "patch": {
+        "tags": ["Areas"],
+        "summary": "Activar / Desactivar programa (via área)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "areaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "programId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Estado alterado"
+          }
+        }
+      }
+    },
+    "/programs": {
+      "get": {
+        "tags": ["Programs"],
+        "summary": "Listar todos os programas",
+        "description": "Devolve todos os programas com dados da área incluídos. Endpoint público.",
+        "parameters": [
+          {
+            "name": "active",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "mode",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "areaId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filtrar por área"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de programas com área",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccess"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/ProgramWithArea"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Programs"],
+        "summary": "Criar programa",
+        "description": "Cria um programa associado a uma área via `areaId` no body.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProgramStandaloneBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Programa criado"
+          },
+          "400": {
+            "description": "Dados inválidos"
+          },
+          "404": {
+            "description": "Área não encontrada"
+          }
+        }
+      }
+    },
+    "/programs/bulk-toggle": {
+      "patch": {
+        "tags": ["Programs"],
+        "summary": "Activar / Desactivar todos os programas de uma área",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkToggleBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Programas actualizados"
+          },
+          "404": {
+            "description": "Área não encontrada"
+          }
+        }
+      }
+    },
+    "/programs/{id}": {
+      "get": {
+        "tags": ["Programs"],
+        "summary": "Detalhe de programa",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Programa com dados da área",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccess"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/ProgramWithArea"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Programs"],
+        "summary": "Actualizar programa",
+        "description": "Permite mover o programa para outra área passando `areaId`.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProgramStandaloneBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Actualizado"
+          },
+          "404": {
+            "description": "Não encontrado"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Programs"],
+        "summary": "Eliminar programa",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Eliminado"
+          },
+          "404": {
+            "description": "Não encontrado"
+          }
+        }
+      }
+    },
+    "/programs/{id}/toggle": {
+      "patch": {
+        "tags": ["Programs"],
+        "summary": "Activar / Desactivar programa",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Estado alterado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccess"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/ToggleResult"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/solutions": {
+      "get": {
+        "tags": ["Solutions"],
+        "summary": "Listar soluções",
+        "description": "Endpoint público. Ordenadas por `order`.",
+        "parameters": [
+          {
+            "name": "active",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de soluções",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccess"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Solution"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Solutions"],
+        "summary": "Criar solução",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSolutionBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Solução criada"
+          },
+          "400": {
+            "description": "Dados inválidos"
+          }
+        }
+      }
+    },
+    "/solutions/reorder": {
+      "patch": {
+        "tags": ["Solutions"],
+        "summary": "Reordenar soluções",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Soluções reordenadas"
+          }
+        }
+      }
+    },
+    "/solutions/{id}": {
+      "get": {
+        "tags": ["Solutions"],
+        "summary": "Detalhe de solução",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Solução encontrada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccess"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/Solution"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrada"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Solutions"],
+        "summary": "Actualizar solução",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSolutionBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Actualizada"
+          },
+          "404": {
+            "description": "Não encontrada"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Solutions"],
+        "summary": "Eliminar solução",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Eliminada"
+          },
+          "404": {
+            "description": "Não encontrada"
+          }
+        }
+      }
+    },
+    "/solutions/{id}/toggle": {
+      "patch": {
+        "tags": ["Solutions"],
+        "summary": "Activar / Desactivar solução",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Estado alterado"
+          }
+        }
+      }
+    },
+    "/solutions/{id}/wide": {
+      "patch": {
+        "tags": ["Solutions"],
+        "summary": "Activar / Desactivar modo destaque (wide)",
+        "description": "Quando `wide=true` a solução ocupa a largura total na grelha do frontend.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Modo wide alternado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccess"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/WideToggleResult"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/slides": {
+      "get": {
+        "tags": ["Slides"],
+        "summary": "Listar hero slides",
+        "description": "Endpoint público. `?active=true` para o frontend.",
+        "parameters": [
+          {
+            "name": "active",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
+            },
+            "description": "Passa `true` para o hero do website"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de slides",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccess"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Slide"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Slides"],
+        "summary": "Criar slide",
+        "description": "Envia `multipart/form-data`. Campo `image` é obrigatório.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSlideFormData"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Slide criado com sucesso"
+          },
+          "400": {
+            "description": "Imagem em falta ou dados inválidos"
+          }
+        }
+      }
+    },
+    "/slides/reorder": {
+      "patch": {
+        "tags": ["Slides"],
+        "summary": "Reordenar slides",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Slides reordenados"
+          }
+        }
+      }
+    },
+    "/slides/{id}": {
+      "get": {
+        "tags": ["Slides"],
+        "summary": "Detalhe de slide",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Slide encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccess"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/Slide"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Slides"],
+        "summary": "Actualizar campos de texto do slide",
+        "description": "Apenas campos de texto — **não altera a imagem**. Para substituir a imagem usa `PATCH /{id}/image`.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSlideBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Slide actualizado"
+          },
+          "404": {
+            "description": "Não encontrado"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Slides"],
+        "summary": "Eliminar slide",
+        "description": "Elimina o slide e o ficheiro de imagem correspondente em `/tmp/uploads`.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Eliminado"
+          },
+          "404": {
+            "description": "Não encontrado"
+          }
+        }
+      }
+    },
+    "/slides/{id}/image": {
+      "patch": {
+        "tags": ["Slides"],
+        "summary": "Substituir imagem do slide",
+        "description": "Envia `multipart/form-data` com campo `image`. Remove a imagem anterior do disco.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSlideImageFormData"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Imagem actualizada"
+          },
+          "400": {
+            "description": "Ficheiro em falta"
+          }
+        }
+      }
+    },
+    "/slides/{id}/toggle": {
+      "patch": {
+        "tags": ["Slides"],
+        "summary": "Activar / Desactivar slide",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Estado alterado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccess"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/ToggleResult"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

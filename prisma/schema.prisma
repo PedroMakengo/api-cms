@@ -1,0 +1,275 @@
+// ═══════════════════════════════════════════════════════
+//  Prisma Schema — Instituto Mirabilis (MAI) CMS
+//  Provider: PostgreSQL
+//  Run:
+//    npx prisma generate
+//    npx prisma db push          (dev — sync sem migrações)
+//    npx prisma migrate dev       (prod — cria migration files)
+// ═══════════════════════════════════════════════════════
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ── ─── ─── ─── ─── ─── ─── ─── ─── ─── ─── ─── ──────
+//  AUTH
+// ── ─── ─── ─── ─── ─── ─── ─── ─── ─── ─── ─── ──────
+
+/// Utilizador com acesso ao CMS
+model AdminUser {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String   // bcrypt hash
+  name      String
+  role      Role     @default(EDITOR)
+  active    Boolean  @default(true)
+  lastLogin DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+  @@index([role])
+}
+
+enum Role {
+  SUPERADMIN
+  EDITOR
+}
+
+/// Token de recuperação de password via OTP
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  otp       String?  // 6-digit code sent by email
+  expires   DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([token])
+}
+
+// ── ─── ─── ─── ─── ─── ─── ─── ─── ─── ─── ─── ──────
+//  WEBSITE CONTENT — Hero, Áreas, Programas, Soluções
+// ── ─── ─── ─── ─── ─── ─── ─── ─── ─── ─── ─── ──────
+
+/// Slides do hero da página inicial
+model HeroSlide {
+  id                String   @id @default(cuid())
+  badge             String
+  title             String
+  description       String
+  ctaPrimaryLabel   String   @default("Explorar Programas")
+  ctaPrimaryHref    String   @default("#areas")
+  ctaSecondaryLabel String   @default("Saber Mais")
+  ctaSecondaryHref  String   @default("#sobre")
+  imageUrl          String
+  order             Int      @default(0)
+  active            Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([active, order])
+}
+
+/// Área de formação (ex: Banca & Finanças, Aviação Civil)
+model Area {
+  id          String    @id @default(cuid())
+  icon        String    // MDI icon name, ex: "bank-outline"
+  title       String
+  description String
+  order       Int       @default(0)
+  active      Boolean   @default(true)
+  programs    Program[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([active, order])
+}
+
+/// Programa de formação dentro de uma área
+model Program {
+  id          String   @id @default(cuid())
+  areaId      String
+  area        Area     @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  name        String
+  duration    String   // ex: "40h"
+  mode        String   // ex: "Presencial", "Online Live"
+  price       String   // ex: "150.000 Kz"
+  startDate   String   // ex: "Jul 2025"
+  description String
+  active      Boolean  @default(true)
+  enrollments EnrollmentSubmission[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([areaId, active])
+}
+
+/// Solução corporativa (ex: Formação In Company, Consultoria)
+model Solution {
+  id          String   @id @default(cuid())
+  icon        String   // MDI icon name, ex: "mdi-office-building-outline"
+  title       String
+  description String
+  order       Int      @default(0)
+  active      Boolean  @default(true)
+  wide        Boolean  @default(false) // destaque — ocupa largura total na grelha
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([active, order])
+}
+
+/// Definições globais do site (singleton — id fixo "singleton")
+model SiteSettings {
+  id              String  @id @default("singleton")
+  siteName        String  @default("Instituto Mirabilis")
+  tagline         String  @default("Administração & Negócios")
+  address         String  @default("Urbanização Nova Rua 165A, Luanda, Angola")
+  phone           String  @default("+244 999 999 999")
+  whatsapp        String  @default("+244999999999")
+  email           String  @default("geral@mai.ao")
+  linkedin        String?
+  facebook        String?
+  instagram       String?
+  youtube         String?
+  googleMapsEmbed String?
+  updatedAt       DateTime @updatedAt
+}
+
+// ── ─── ─── ─── ─── ─── ─── ─── ─── ─── ─── ─── ──────
+//  SUBMISSÕES DO WEBSITE — Contacto, Inscrições
+// ── ─── ─── ─── ─── ─── ─── ─── ─── ─── ─── ─── ──────
+
+/// Mensagem enviada pelo formulário de contacto do website
+model ContactSubmission {
+  id           String   @id @default(cuid())
+  name         String
+  lastname     String
+  email        String
+  phone        String?
+  organization String?
+  area         String?  // área de interesse seleccionada no formulário
+  message      String?
+  read         Boolean  @default(false)
+  readAt       DateTime?
+  createdAt    DateTime @default(now())
+
+  @@index([read, createdAt])
+  @@index([createdAt])
+}
+
+/// Inscrição em programa enviada pelo formulário do website
+model EnrollmentSubmission {
+  id           String           @id @default(cuid())
+  programId    String?
+  program      Program?         @relation(fields: [programId], references: [id], onDelete: SetNull)
+  programName  String           // snapshot do nome no momento da inscrição
+  areaName     String
+  price        String
+  name         String
+  lastname     String
+  email        String
+  phone        String
+  organization String?
+  role         String?          // cargo do inscrito
+  status       EnrollmentStatus @default(PENDING)
+  statusNote   String?          // nota interna ao mudar estado
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@index([status, createdAt])
+  @@index([programId])
+  @@index([email])
+}
+
+enum EnrollmentStatus {
+  PENDING    // aguarda confirmação
+  CONFIRMED  // inscrição confirmada
+  CANCELLED  // cancelada
+}
+
+// ── ─── ─── ─── ─── ─── ─── ─── ─── ─── ─── ─── ──────
+//  RECRUTAMENTO — Vagas, Candidaturas
+// ── ─── ─── ─── ─── ─── ─── ─── ─── ─── ─── ─── ──────
+
+/// Vaga de emprego publicada pelo admin
+model Job {
+  id           String         @id @default(cuid())
+  title        String
+  department   String
+  location     JobLocation    @default(PRESENCIAL)
+  type         JobType        @default(FULL_TIME)
+  area         String
+  description  String
+  requirements Json           // array de strings serializado
+  benefits     Json           
+  salary       String?
+  deadline     String?        // ex: "31 Jul 2025"
+  featured     Boolean        @default(false)
+  status       JobStatus      @default(OPEN)
+  applications JobApplication[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([status, featured])
+  @@index([status, createdAt])
+}
+
+/// Candidatura a uma vaga, enviada pelo formulário público
+model JobApplication {
+  id          String      @id @default(cuid())
+  jobId       String
+  job         Job         @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  name        String
+  lastname    String
+  email       String
+  phone       String
+  linkedin    String?
+  portfolio   String?
+  coverLetter String      @db.MediumText
+  cvUrl       String?     // URL do ficheiro carregado (ex: S3)
+  status      ApplyStatus @default(PENDING)
+  statusNote  String?     // nota interna ao mudar estado
+  reviewedAt  DateTime?   // quando foi aberta pela primeira vez
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([jobId, status])
+  @@index([status, createdAt])
+  @@index([email])
+}
+
+enum JobType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERNSHIP
+}
+
+enum JobLocation {
+  PRESENCIAL
+  REMOTO
+  HIBRIDO
+}
+
+enum JobStatus {
+  OPEN    // vaga activa, a receber candidaturas
+  CLOSED  // encerrada
+  PAUSED  // pausada temporariamente
+}
+
+enum ApplyStatus {
+  PENDING    // recebida, ainda não revista
+  REVIEWING  // em análise
+  INTERVIEW  // convidado para entrevista
+  REJECTED   // rejeitado
+  HIRED      // contratado
+}
