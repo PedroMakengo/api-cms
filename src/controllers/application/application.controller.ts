@@ -23,7 +23,7 @@ export const createApplicationSchema = z.object({
 
 export const updateApplicationStatusSchema = z.object({
   status: z.enum(['PENDING', 'REVIEWING', 'INTERVIEW', 'REJECTED', 'HIRED'], {
-    errorMap: () => ({
+    error: () => ({
       message:
         'Estado inválido. Valores aceites: PENDING, REVIEWING, INTERVIEW, REJECTED, HIRED',
     }),

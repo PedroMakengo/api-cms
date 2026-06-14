@@ -1,6 +1,10 @@
 // import { prisma } from '../prisma/client'
 import prisma from '../../prisma'
-import type { CreateJobBody, UpdateJobBody, JobQuery } from '../types/job'
+import type {
+  CreateJobBody,
+  UpdateJobBody,
+  JobQuery,
+} from '../../models/interfaces/Job'
 import { JobStatus, JobType, JobLocation } from '@prisma/client'
 
 export class JobService {

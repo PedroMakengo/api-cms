@@ -34,7 +34,7 @@ export const updateJobSchema = createJobSchema.partial()
 
 export const updateJobStatusSchema = z.object({
   status: z.enum(['OPEN', 'CLOSED', 'PAUSED'], {
-    errorMap: () => ({
+    error: () => ({
       message: 'Estado inválido. Valores aceites: OPEN, CLOSED, PAUSED',
     }),
   }),

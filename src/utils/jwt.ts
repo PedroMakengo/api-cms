@@ -1,6 +1,10 @@
 import jwt from 'jsonwebtoken'
 import { env } from '../config/env'
-import type { JwtPayload, RefreshPayload, AuthTokens } from '../types/auth'
+import type {
+  JwtPayload,
+  RefreshPayload,
+  AuthTokens,
+} from '../models/interfaces/user/auth/AuthRequest'
 import { Role } from '@prisma/client'
 
 export function signAccessToken(

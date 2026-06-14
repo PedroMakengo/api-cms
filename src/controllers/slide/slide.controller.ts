@@ -76,7 +76,7 @@ export class SlideController {
       // Validar campos de texto
       const parsed = createSlideSchema.safeParse(req.body)
       if (!parsed.success) {
-        return badRequest(res, 'Dados inválidos', parsed.error.errors)
+        return badRequest(res, 'Dados inválidos', parsed.error.issues)
       }
 
       const imageUrl = fileUrl(req, req.file.filename)

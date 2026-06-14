@@ -25,7 +25,7 @@ export const createEnrollmentSchema = z.object({
 
 export const updateStatusSchema = z.object({
   status: z.enum(['PENDING', 'CONFIRMED', 'CANCELLED'], {
-    errorMap: () => ({
+    error: () => ({
       message:
         'Estado inválido. Valores aceites: PENDING, CONFIRMED, CANCELLED',
     }),
