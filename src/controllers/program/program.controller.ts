@@ -1,34 +1,34 @@
 import { Request, Response } from 'express'
 import { z } from 'zod'
-import { ok, created, noContent, serverError } from '../../utils/response'
 import { programService } from '../../services/program/program.service'
+import { ok, created, noContent, serverError } from '../../utils/response'
 
 // ── Schemas Zod ───────────────────────────────────────────
 
 export const createProgramSchema = z.object({
-  areaId: z.string().cuid('areaId deve ser um CUID válido'),
+  areaId: z.string().min(1, 'areaId deve ser um CUID válido'),
   name: z.string().min(2, 'Nome mínimo 2 caracteres'),
   duration: z.string().min(1, 'Duração obrigatória'),
   mode: z.string().min(1, 'Modalidade obrigatória'),
   price: z.string().min(1, 'Preço obrigatório'),
   startDate: z.string().min(1, 'Data de início obrigatória'),
-  description: z.string().min(5, 'Descrição mínimo 5 caracteres'),
+  description: z.string().min(1),
   active: z.boolean().optional(),
 })
 
 export const updateProgramSchema = z.object({
-  areaId: z.string().cuid().optional(),
+  areaId: z.string().min(1).optional(),
   name: z.string().min(2).optional(),
   duration: z.string().min(1).optional(),
   mode: z.string().min(1).optional(),
   price: z.string().min(1).optional(),
   startDate: z.string().min(1).optional(),
-  description: z.string().min(5).optional(),
+  description: z.string().min(1).optional(),
   active: z.boolean().optional(),
 })
 
 export const bulkToggleSchema = z.object({
-  areaId: z.string().cuid('areaId deve ser um CUID válido'),
+  areaId: z.string().min(1, 'areaId deve ser um CUID válido'),
   active: z.boolean(),
 })
 

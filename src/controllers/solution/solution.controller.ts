@@ -8,8 +8,8 @@ import { solutionService } from '../../services/solution/solution.service'
 export const createSolutionSchema = z.object({
   icon: z.string().min(1, 'Ícone obrigatório'),
   title: z.string().min(2, 'Título mínimo 2 caracteres'),
-  description: z.string().min(10, 'Descrição mínimo 10 caracteres'),
-  order: z.number().int().positive().optional(),
+  description: z.string().min(1, 'Descrição obrigatória'), // ← era min(10), relaxado
+  order: z.coerce.number().int().positive().optional(), // ← coerce: aceita string "1"
   active: z.boolean().optional(),
   wide: z.boolean().optional(),
 })
@@ -17,16 +17,14 @@ export const createSolutionSchema = z.object({
 export const updateSolutionSchema = createSolutionSchema.partial()
 
 export const reorderSchema = z.object({
-  ids: z.array(z.string().cuid()).min(1, 'Array de IDs obrigatório'),
+  // ← removido .cuid() — aceita qualquer string não vazia
+  ids: z.array(z.string().min(1)).min(1, 'Array de IDs obrigatório'),
 })
 
 // ── Controller ────────────────────────────────────────────
 
 export class SolutionController {
-  /**
-   * GET /solutions
-   * Query: ?active=true&search=company
-   */
+  /** GET /solutions */
   async list(req: Request, res: Response) {
     try {
       const solutions = await solutionService.listSolutions({
@@ -43,9 +41,7 @@ export class SolutionController {
     }
   }
 
-  /**
-   * GET /solutions/:id
-   */
+  /** GET /solutions/:id */
   async getOne(req: Request, res: Response) {
     try {
       const solution = await solutionService.getSolution(req.params.id)
@@ -59,10 +55,7 @@ export class SolutionController {
     }
   }
 
-  /**
-   * POST /solutions
-   * Body: CreateSolutionBody
-   */
+  /** POST /solutions */
   async create(req: Request, res: Response) {
     try {
       const solution = await solutionService.createSolution(req.body)
@@ -76,10 +69,7 @@ export class SolutionController {
     }
   }
 
-  /**
-   * PUT /solutions/:id
-   * Body: UpdateSolutionBody
-   */
+  /** PUT /solutions/:id */
   async update(req: Request, res: Response) {
     try {
       const solution = await solutionService.updateSolution(
@@ -96,10 +86,7 @@ export class SolutionController {
     }
   }
 
-  /**
-   * PATCH /solutions/:id/toggle
-   * Activa ou desactiva a solução
-   */
+  /** PATCH /solutions/:id/toggle */
   async toggle(req: Request, res: Response) {
     try {
       const result = await solutionService.toggleSolution(req.params.id)
@@ -113,10 +100,7 @@ export class SolutionController {
     }
   }
 
-  /**
-   * PATCH /solutions/:id/wide
-   * Activa ou desactiva o modo destaque (wide)
-   */
+  /** PATCH /solutions/:id/wide */
   async toggleWide(req: Request, res: Response) {
     try {
       const result = await solutionService.toggleWide(req.params.id)
@@ -130,10 +114,7 @@ export class SolutionController {
     }
   }
 
-  /**
-   * PATCH /solutions/reorder
-   * Body: { ids: string[] }
-   */
+  /** PATCH /solutions/reorder */
   async reorder(req: Request, res: Response) {
     try {
       const solutions = await solutionService.reorderSolutions(req.body.ids)
@@ -147,9 +128,7 @@ export class SolutionController {
     }
   }
 
-  /**
-   * DELETE /solutions/:id
-   */
+  /** DELETE /solutions/:id */
   async remove(req: Request, res: Response) {
     try {
       await solutionService.deleteSolution(req.params.id)

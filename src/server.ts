@@ -14,15 +14,36 @@ const app = express()
 // ── Middlewares globais ───────────────────────────────────
 app.use(
   cors({
-    origin: env.corsOrigin,
+    origin: (requestOrigin, callback) => {
+      // Permite requisições sem origin (ex: Postman, curl, mobile apps)
+      if (!requestOrigin) return callback(null, true)
+
+      const allowed = [
+        env.corsOrigin,
+        // Garante variantes com e sem protocolo
+        env.corsOrigin.replace('http://', 'https://'),
+        'http://localhost:3000',
+        'http://localhost:3001',
+      ]
+
+      if (allowed.includes(requestOrigin)) {
+        callback(null, true)
+      } else {
+        callback(new Error(`CORS: origem não permitida — ${requestOrigin}`))
+      }
+    },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
+    optionsSuccessStatus: 200, // Alguns browsers (IE11) retornam 204 como erro
   }),
 )
 
 app.use(express.json({ limit: '2mb' }))
 app.use(express.urlencoded({ extended: true }))
+
+// Responder explicitamente a preflight OPTIONS em todas as rotas
+app.options('*', cors())
 
 // ── Ficheiros estáticos — imagens dos slides ──────────────
 // Acesso: GET /uploads/<filename>

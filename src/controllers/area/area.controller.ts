@@ -1,7 +1,7 @@
 import { Request, Response } from 'express'
 import { z } from 'zod'
-import { ok, created, noContent, serverError } from '../../utils/response'
 import { areaService } from '../../services/area/area.service'
+import { ok, created, noContent, serverError } from '../../utils/response'
 
 // ── Schemas de validação ──────────────────────────────────
 
@@ -9,14 +9,14 @@ export const createAreaSchema = z.object({
   icon: z.string().min(1, 'Ícone obrigatório'),
   title: z.string().min(2, 'Título mínimo 2 caracteres'),
   description: z.string().min(10, 'Descrição mínimo 10 caracteres'),
-  order: z.number().int().positive().optional(),
+  order: z.coerce.number().int().positive().optional(),
   active: z.boolean().optional(),
 })
 
 export const updateAreaSchema = createAreaSchema.partial()
 
 export const reorderSchema = z.object({
-  ids: z.array(z.string().cuid()).min(1, 'IDs obrigatórios'),
+  ids: z.array(z.string().min(1)).min(1, 'IDs obrigatórios'),
 })
 
 export const createProgramSchema = z.object({
@@ -25,7 +25,7 @@ export const createProgramSchema = z.object({
   mode: z.string().min(1),
   price: z.string().min(1),
   startDate: z.string().min(1),
-  description: z.string().min(5),
+  description: z.string().min(1),
   active: z.boolean().optional(),
 })
 
