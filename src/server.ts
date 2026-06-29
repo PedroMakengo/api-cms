@@ -24,6 +24,8 @@ app.use(
         env.corsOrigin.replace('http://', 'https://'),
         'http://localhost:3000',
         'http://localhost:3001',
+        'https://www.institutemirabilis.com',
+        'https://institutemirabilis.com',
       ]
 
       if (allowed.includes(requestOrigin)) {
