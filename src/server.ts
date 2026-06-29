@@ -19,12 +19,12 @@ app.use(
       if (!requestOrigin) return callback(null, true)
 
       const allowed = [
-        env.corsOrigin,
-        // Garante variantes com e sem protocolo
-        env.corsOrigin.replace('http://', 'https://'),
+        env.corsOrigin, // → 'https://portal.institutemirabilis.com'
+        env.corsOrigin.replace('http://', 'https://'), // → mesma string, não muda nada
         'http://localhost:3000',
         'http://localhost:3001',
-        'https://www.institutemirabilis.com',
+        'https://portal.institutemirabilis.com',
+        'https://www.institutemirabilis.com', // ← já devia cobrir o teu caso
         'https://institutemirabilis.com',
       ]
 
