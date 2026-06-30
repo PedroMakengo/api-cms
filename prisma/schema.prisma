@@ -140,7 +140,7 @@ model SiteSettings {
   facebook        String?
   instagram       String?
   youtube         String?
-  googleMapsEmbed String?
+  googleMapsEmbed String?  @db.Text 
   updatedAt       DateTime @updatedAt
 }
 
